@@ -105,6 +105,17 @@ endif
 
 configfiles=$(wildcard $(srctree)/kernel/configs/$@ $(srctree)/arch/$(SRCARCH)/configs/$@)
 
+hardened%.config:
+	mkdir $(srctree)/kernel/configs/generated/ || true
+	$(CONFIG_SHELL) $(srctree)/scripts/kconfig/build_hardened_fragment.sh \
+	$* $(srctree)/Documentation/security/hardenedconfig.rst > \
+	$(srctree)/kernel/configs/generated/hardened$*.config
+	$(eval configfiles += $(srctree)/kernel/configs/generated/hardened$*.config)
+
+	$(if $(call configfiles),, $(error No configuration exists for this target on this architecture))
+	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m .config $(configfiles)
+	+$(Q)yes "" | $(MAKE) -f $(srctree)/Makefile oldconfig
+
 %.config: $(obj)/conf
 	$(if $(call configfiles),, $(error No configuration exists for this target on this architecture))
 	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m .config $(configfiles)
@@ -121,6 +132,16 @@ xenconfig: xen.config
 PHONY += tinyconfig
 tinyconfig:
 	$(Q)$(MAKE) -f $(srctree)/Makefile allnoconfig tiny.config
+
+PHONY += hardenedlowconfig hardenedmediumconfig hardenedhighconfig hardenedextremeconfig
+hardenedlowconfig: hardenedlow.config
+	@:
+hardenedmediumconfig: hardenedmedium.config
+	@:
+hardenedhighconfig: hardenedhigh.config
+	@:
+hardenedextremeconfig: hardenedextreme.config
+	@:
 
 # CHECK: -o cache_dir=<path> working?
 PHONY += testconfig
@@ -154,6 +175,14 @@ help:
 	@echo  '  xenconfig       - Enable additional options for xen dom0 and guest kernel support'
 	@echo  '  tinyconfig	  - Configure the tiniest possible kernel'
 	@echo  '  testconfig	  - Run Kconfig unit tests (requires python3 and pytest)'
+	@echo  '  hardenedlowconfig     - Update current config using hardened features with'
+	@echo  '                          few negative side effects'
+	@echo  '  hardenedmediumconfig  - Update current config using hardened features with'
+	@echo  '                          some negative side effects'
+	@echo  '  hardenedhighconfig    - Update current config using hardened features with'
+	@echo  '                          many negative side effects'
+	@echo  '  hardenedextremeconfig - Update current config using hardened features with'
+	@echo  '                          even more negative side effects'
 
 # ===========================================================================
 # Shared Makefile for the various kconfig executables:

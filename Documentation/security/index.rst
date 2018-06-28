@@ -13,3 +13,4 @@ Security Documentation
    SELinux-sctp
    self-protection
    tpm/index
+   hardenedconfig
